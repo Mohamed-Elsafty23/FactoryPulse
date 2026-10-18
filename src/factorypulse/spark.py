@@ -1,0 +1,72 @@
+"""Spark session construction. The only module that knows about JARs."""
+
+from __future__ import annotations
+
+from delta import configure_spark_with_delta_pip
+from pyspark.sql import SparkSession
+
+from factorypulse.config import Settings, settings
+
+_S3_PACKAGES = [
+    "org.apache.hadoop:hadoop-aws:3.3.4",
+    "com.amazonaws:aws-java-sdk-bundle:1.12.262",
+]
+_JDBC_PACKAGES = [
+    "org.postgresql:postgresql:42.7.3",
+]
+
+
+def get_spark(
+    app_name: str = "factorypulse",
+    cfg: Settings | None = None,
+    shuffle_partitions: int | None = None,
+) -> SparkSession:
+    """Build or fetch a SparkSession configured for the current environment."""
+    cfg = cfg or settings
+
+    builder = (
+        SparkSession.builder.appName(app_name)
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .config(
+            "spark.sql.catalog.spark_catalog",
+            "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+        )
+        .config("spark.sql.session.timeZone", "UTC")
+        .config("spark.sql.adaptive.enabled", "true")
+        .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
+        .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
+    )
+
+    if shuffle_partitions is not None:
+        builder = builder.config("spark.sql.shuffle.partitions", str(shuffle_partitions))
+
+    extra_packages: list[str] = []
+
+    if cfg.is_local:
+        extra_packages = _S3_PACKAGES + _JDBC_PACKAGES
+        builder = (
+            # Keep local development responsive on an 8-core/16-GB laptop.
+            builder.master("local[2]")
+            .config("spark.sql.shuffle.partitions", str(shuffle_partitions or 8))
+            .config("spark.driver.memory", "2g")
+            .config("spark.hadoop.fs.s3a.endpoint", cfg.minio_endpoint)
+            .config("spark.hadoop.fs.s3a.access.key", cfg.minio_access_key)
+            .config("spark.hadoop.fs.s3a.secret.key", cfg.minio_secret_key)
+            .config("spark.hadoop.fs.s3a.path.style.access", "true")
+            .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
+            .config(
+                "spark.hadoop.fs.s3a.impl",
+                "org.apache.hadoop.fs.s3a.S3AFileSystem",
+            )
+            .config(
+                "spark.hadoop.fs.s3a.aws.credentials.provider",
+                "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
+            )
+            .config("spark.hadoop.fs.s3a.fast.upload", "true")
+            .config("spark.hadoop.fs.s3a.fast.upload.buffer", "disk")
+        )
+
+    spark = configure_spark_with_delta_pip(builder, extra_packages=extra_packages).getOrCreate()
+
+    spark.sparkContext.setLogLevel("WARN")
+    return spark

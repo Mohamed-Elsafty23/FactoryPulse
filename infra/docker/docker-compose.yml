@@ -1,0 +1,65 @@
+name: factorypulse
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fp-postgres
+    environment:
+      POSTGRES_USER: factorypulse
+      POSTGRES_PASSWORD: factorypulse # pragma: allowlist secret
+      POSTGRES_DB: factorypulse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../sql/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factorypulse -d factorypulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+
+  minio:
+    image: bitnamilegacy/minio:latest
+    container_name: fp-minio
+    command: server /bitnami/minio/data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin # pragma: allowlist secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.0
+
+  minio-init:
+    image: bitnamilegacy/minio-client:latest
+    container_name: fp-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/factorypulse;
+      mc anonymous set download local/factorypulse;
+      echo '>>> bucket factorypulse ready';
+      exit 0;
+      "
+    mem_limit: 256m
+    cpus: 0.5
+
+volumes:
+  pgdata:
+  miniodata:
