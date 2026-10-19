@@ -36,7 +36,6 @@
 | **Runtime** | 6 m 37 s end to end on Databricks serverless |
 | **Infrastructure** | 69 Terraform resources, `plan` clean |
 | **Quality** | 10 data-quality gates, 59 tests, CI green |
-| **Cost** | $3.24 of a $200 Azure credit |
 
 Built across 16 phases: local Docker development, Azure provisioning, metadata-driven
 ingestion, medallion transformation, governance, and a dashboard that runs without Azure.
@@ -156,7 +155,6 @@ Measured on a green end-to-end run, 2026-10-19.
 | Data-quality checks | **10 / 10** |
 | Tests | **59 passing** |
 | Partition pruning speed-up | **1.40×** (0.734 s → 0.524 s) |
-| Azure spend | **$3.24** |
 
 Method, hardware and the physical plan behind the pruning figure are in
 [docs/benchmarks.md](docs/benchmarks.md), including why the margin is modest at this data size.
@@ -268,43 +266,9 @@ pd.read_parquet("exports/gold_fact_downtime/")
 
 ---
 
-## Cost
+## Documentation
 
-$3.24 of a $200 Azure credit.
-
-| Service | Cost |
-|---|--:|
-| Azure SQL (serverless, auto-pause) | $2.16 |
-| Data Factory | $1.08 |
-| ADLS Gen2 (~1 GB) | $0.00 |
-| Databricks (serverless jobs) | $0.00 * |
-
-\* Reported on a lag, so understated. Job compute is created per run and destroyed at the end;
-the interactive cluster carries a 10-minute auto-termination that a Terraform `validation`
-block refuses to let anyone raise above 30. Budget alerts are created before any billable
-resource, ordered with `depends_on`.
-
----
-
-## Repository
-
-```
-infra/terraform/      Azure platform as code
-infra/docker/         local Postgres + MinIO
-src/factorypulse/
-  config.py           the only module that knows local paths from Azure paths
-  simulator/          AI4I profiling, telemetry generation, defect injection
-  pipeline/           bronze, silver, scd2, gold, dimensions
-  quality/            validation rules, schema contract, the ten checks
-  dashboard/          DuckDB access, semantic layer, theme, charts
-app/                  Streamlit dashboard
-notebooks/            thin Databricks wrappers over src/
-tests/                59 tests, no cloud required
-exports/              Gold tables as Parquet
-docs/                 build guide, ADRs, benchmarks, diagrams
-```
-
-| Documentation | |
+| | |
 |---|---|
 | [Build guide](docs/build/00_START_HERE.md) | every phase, with reasoning |
 | [Semantic layer](docs/metrics.md) | each metric and why it's written that way |
