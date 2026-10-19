@@ -1,0 +1,210 @@
+[
+  {
+    "name": "LookupControlTable",
+    "type": "Lookup",
+    "dependsOn": [],
+    "policy": {
+      "timeout": "0.00:10:00",
+      "retry": 2,
+      "retryIntervalInSeconds": 60,
+      "secureOutput": false,
+      "secureInput": false
+    },
+    "typeProperties": {
+      "source": {
+        "type": "AzureSqlSource",
+        "sqlReaderQuery": {
+          "value": "@concat('SELECT source_schema, source_table, watermark_column, last_watermark, target_path FROM ops.ingestion_control WHERE is_active = 1 ', if(equals(pipeline().parameters.tableFilter, '*'), '', concat('AND source_table = ''', pipeline().parameters.tableFilter, '''')))",
+          "type": "Expression"
+        },
+        "queryTimeout": "02:00:00",
+        "partitionOption": "None"
+      },
+      "dataset": {
+        "referenceName": "ds_sql_generic",
+        "type": "DatasetReference",
+        "parameters": {
+          "schemaName": "ops",
+          "tableName": "ingestion_control"
+        }
+      },
+      "firstRowOnly": false
+    }
+  },
+  {
+    "name": "ForEachTable",
+    "type": "ForEach",
+    "dependsOn": [
+      {
+        "activity": "LookupControlTable",
+        "dependencyConditions": ["Succeeded"]
+      }
+    ],
+    "typeProperties": {
+      "items": {
+        "value": "@activity('LookupControlTable').output.value",
+        "type": "Expression"
+      },
+      "isSequential": true,
+      "activities": [
+        {
+          "name": "LookupMaxWatermark",
+          "type": "Lookup",
+          "dependsOn": [],
+          "policy": {
+            "timeout": "0.00:10:00",
+            "retry": 3,
+            "retryIntervalInSeconds": 60
+          },
+          "typeProperties": {
+            "source": {
+              "type": "AzureSqlSource",
+              "sqlReaderQuery": {
+                "value": "@concat('SELECT MAX(', item().watermark_column, ') AS max_wm FROM ', item().source_schema, '.', item().source_table)",
+                "type": "Expression"
+              },
+              "queryTimeout": "02:00:00",
+              "partitionOption": "None"
+            },
+            "dataset": {
+              "referenceName": "ds_sql_generic",
+              "type": "DatasetReference",
+              "parameters": {
+                "schemaName": {
+                  "value": "@item().source_schema",
+                  "type": "Expression"
+                },
+                "tableName": {
+                  "value": "@item().source_table",
+                  "type": "Expression"
+                }
+              }
+            },
+            "firstRowOnly": true
+          }
+        },
+        {
+          "name": "CopyIncremental",
+          "type": "Copy",
+          "dependsOn": [
+            {
+              "activity": "LookupMaxWatermark",
+              "dependencyConditions": ["Succeeded"]
+            }
+          ],
+          "policy": {
+            "timeout": "0.01:00:00",
+            "retry": 3,
+            "retryIntervalInSeconds": 60
+          },
+          "typeProperties": {
+            "source": {
+              "type": "AzureSqlSource",
+              "sqlReaderQuery": {
+                "value": "@concat('SELECT * FROM ', item().source_schema, '.', item().source_table, ' WHERE ', item().watermark_column, ' > ''', item().last_watermark, '''', ' AND ', item().watermark_column, ' <= ''', activity('LookupMaxWatermark').output.firstRow.max_wm, '''')",
+                "type": "Expression"
+              },
+              "queryTimeout": "02:00:00",
+              "partitionOption": "None"
+            },
+            "sink": {
+              "type": "ParquetSink",
+              "storeSettings": {
+                "type": "AzureBlobFSWriteSettings"
+              },
+              "formatSettings": {
+                "type": "ParquetWriteSettings"
+              }
+            },
+            "enableStaging": false,
+            "translator": {
+              "type": "TabularTranslator",
+              "typeConversion": true,
+              "typeConversionSettings": {
+                "allowDataTruncation": false,
+                "treatBooleanAsNumber": false
+              }
+            }
+          },
+          "inputs": [
+            {
+              "referenceName": "ds_sql_generic",
+              "type": "DatasetReference",
+              "parameters": {
+                "schemaName": {
+                  "value": "@item().source_schema",
+                  "type": "Expression"
+                },
+                "tableName": {
+                  "value": "@item().source_table",
+                  "type": "Expression"
+                }
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "referenceName": "ds_adls_parquet",
+              "type": "DatasetReference",
+              "parameters": {
+                "folderPath": {
+                  "value": "@concat(item().target_path, '/ingest_date=', formatDateTime(utcnow(), 'yyyy-MM-dd'))",
+                  "type": "Expression"
+                },
+                "fileName": {
+                  "value": "@concat(item().source_table, '_', formatDateTime(utcnow(), 'yyyyMMddHHmmss'), '.parquet')",
+                  "type": "Expression"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "UpdateWatermark",
+          "type": "SqlServerStoredProcedure",
+          "dependsOn": [
+            {
+              "activity": "CopyIncremental",
+              "dependencyConditions": ["Succeeded"]
+            }
+          ],
+          "policy": {
+            "timeout": "0.00:10:00",
+            "retry": 2,
+            "retryIntervalInSeconds": 30
+          },
+          "typeProperties": {
+            "storedProcedureName": "[ops].[usp_update_watermark]",
+            "storedProcedureParameters": {
+              "source_schema": {
+                "value": {
+                  "value": "@item().source_schema",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "source_table": {
+                "value": {
+                  "value": "@item().source_table",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "new_watermark": {
+                "value": {
+                  "value": "@activity('LookupMaxWatermark').output.firstRow.max_wm",
+                  "type": "Expression"
+                },
+                "type": "DateTime"
+              }
+            }
+          },
+          "linkedServiceName": {
+            "referenceName": "ls_azuresql_factorypulse",
+            "type": "LinkedServiceReference"
+          }
+        }
+      ]
+    }
+  }
+]

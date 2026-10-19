@@ -1,0 +1,131 @@
+<mxfile host="65bd71144e">
+    <diagram id="event-star" name="1 - Machine Event Star">
+        <mxGraphModel dx="1330" dy="1270" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="FactoryPulse Gold — Machine Event Star" vertex="1">
+                    <mxGeometry height="40" width="600" x="400" y="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="f" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=12;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=13;" value="&lt;b&gt;fact_machine_event&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;One sensor reading per machine/timestamp&lt;/font&gt;&lt;hr&gt;&lt;b&gt;PK event_id&lt;/b&gt;&lt;br&gt;&lt;b&gt;FK machine_sk, date_sk&lt;/b&gt;&lt;br&gt;&lt;b&gt;FK shift_sk, plant_sk, failure_type_sk&lt;/b&gt;&lt;br&gt;event_time, event_date&lt;br&gt;air_temp_k, process_temp_k, temp_diff_k&lt;br&gt;rotational_speed_rpm, torque_nm, power_w&lt;br&gt;tool_wear_min, is_failure, is_running" vertex="1">
+                    <mxGeometry height="290" width="400" x="500" y="310" as="geometry"/>
+                </mxCell>
+                <mxCell id="d" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_date&lt;/b&gt;&lt;br&gt;One calendar day&lt;hr&gt;&lt;b&gt;PK date_sk&lt;/b&gt;&lt;br&gt;date, year, quarter, month, day&lt;br&gt;week/day attributes, German names" vertex="1">
+                    <mxGeometry height="160" width="280" x="60" y="350" as="geometry"/>
+                </mxCell>
+                <mxCell id="m" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_machine (SCD2)&lt;/b&gt;&lt;br&gt;One machine version&lt;hr&gt;&lt;b&gt;PK machine_sk&lt;/b&gt;&lt;br&gt;machine_id, plant_id, line_id&lt;br&gt;model, type, criticality&lt;br&gt;valid_from, valid_to, is_current" vertex="1">
+                    <mxGeometry height="190" width="280" x="60" y="570" as="geometry"/>
+                </mxCell>
+                <mxCell id="s" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_shift&lt;/b&gt;&lt;br&gt;One shift&lt;hr&gt;&lt;b&gt;PK shift_sk&lt;/b&gt;&lt;br&gt;shift_name, shift_name_de&lt;br&gt;start_hour, end_hour" vertex="1">
+                    <mxGeometry height="150" width="280" x="560" y="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="p" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_plant&lt;/b&gt;&lt;br&gt;One plant&lt;hr&gt;&lt;b&gt;PK plant_sk&lt;/b&gt;&lt;br&gt;plant_id, plant_name&lt;br&gt;country, timezone" vertex="1">
+                    <mxGeometry height="150" width="280" x="1060" y="350" as="geometry"/>
+                </mxCell>
+                <mxCell id="x" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_failure_type&lt;/b&gt;&lt;br&gt;One failure mode&lt;hr&gt;&lt;b&gt;PK failure_type_sk&lt;/b&gt;&lt;br&gt;code, name_en, name_de, severity" vertex="1">
+                    <mxGeometry height="150" width="280" x="1060" y="570" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" edge="1" parent="1" source="d" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" edge="1" parent="1" source="m" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" edge="1" parent="1" source="s" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" edge="1" parent="1" source="p" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" edge="1" parent="1" source="x" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="downtime-star" name="2 - Downtime Star">
+        <mxGraphModel dx="1330" dy="1270" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="FactoryPulse Gold — Downtime Star" vertex="1">
+                    <mxGeometry height="40" width="600" x="400" y="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="f" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=12;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=13;" value="&lt;b&gt;fact_downtime&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;One continuous downtime interval&lt;/font&gt;&lt;hr&gt;&lt;b&gt;PK downtime_id&lt;/b&gt;&lt;br&gt;&lt;b&gt;FK machine_sk, date_sk, shift_sk&lt;/b&gt;&lt;br&gt;&lt;b&gt;FK plant_sk, failure_type_sk&lt;/b&gt;&lt;br&gt;downtime_start, downtime_end&lt;br&gt;downtime_minutes, downtime_cost_eur&lt;br&gt;is_planned, downtime_date" vertex="1">
+                    <mxGeometry height="250" width="400" x="500" y="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="d" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_date&lt;/b&gt;&lt;br&gt;One calendar day&lt;hr&gt;&lt;b&gt;PK date_sk&lt;/b&gt;&lt;br&gt;date and calendar attributes" vertex="1">
+                    <mxGeometry height="140" width="280" x="60" y="350" as="geometry"/>
+                </mxCell>
+                <mxCell id="m" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_machine (SCD2)&lt;/b&gt;&lt;br&gt;Version valid at downtime_start&lt;hr&gt;&lt;b&gt;PK machine_sk&lt;/b&gt;&lt;br&gt;machine, plant, line, model&lt;br&gt;valid_from, valid_to" vertex="1">
+                    <mxGeometry height="170" width="280" x="60" y="590" as="geometry"/>
+                </mxCell>
+                <mxCell id="s" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_shift&lt;/b&gt;&lt;br&gt;One shift&lt;hr&gt;&lt;b&gt;PK shift_sk&lt;/b&gt;&lt;br&gt;shift names and hours" vertex="1">
+                    <mxGeometry height="140" width="280" x="560" y="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="p" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_plant&lt;/b&gt;&lt;br&gt;One plant&lt;hr&gt;&lt;b&gt;PK plant_sk&lt;/b&gt;&lt;br&gt;plant name, country, timezone" vertex="1">
+                    <mxGeometry height="140" width="280" x="1060" y="350" as="geometry"/>
+                </mxCell>
+                <mxCell id="x" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_failure_type&lt;/b&gt;&lt;br&gt;One failure mode&lt;hr&gt;&lt;b&gt;PK failure_type_sk&lt;/b&gt;&lt;br&gt;code, names, severity" vertex="1">
+                    <mxGeometry height="140" width="280" x="1060" y="590" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" edge="1" parent="1" source="d" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" edge="1" parent="1" source="m" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" edge="1" parent="1" source="s" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" edge="1" parent="1" source="p" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" edge="1" parent="1" source="x" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="f">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="other-stars" name="3 - Work Orders and Daily Aggregate">
+        <mxGraphModel dx="1166" dy="1114" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="FactoryPulse Gold — Supporting Stars" vertex="1">
+                    <mxGeometry height="40" width="600" x="400" y="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="wo" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;" value="&lt;b&gt;fact_work_order&lt;/b&gt;&lt;br&gt;One maintenance work order&lt;hr&gt;&lt;b&gt;PK work_order_id&lt;/b&gt;&lt;br&gt;&lt;b&gt;FK machine_sk, date_sk&lt;/b&gt;&lt;br&gt;type, failure, priority, timestamps&lt;br&gt;response, repair, labour, parts cost" vertex="1">
+                    <mxGeometry height="210" width="330" x="160" y="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="agg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;" value="&lt;b&gt;agg_machine_daily&lt;/b&gt;&lt;br&gt;One machine per calendar day&lt;hr&gt;&lt;b&gt;FK machine_sk, date_sk, plant_sk&lt;/b&gt;&lt;br&gt;running and downtime components&lt;br&gt;failure_count, downtime_cost_eur&lt;br&gt;sensor averages, availability&lt;br&gt;&lt;i&gt;MTBF calculated from component sums&lt;/i&gt;" vertex="1">
+                    <mxGeometry height="220" width="330" x="910" y="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="d" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_date&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK date_sk&lt;/b&gt;" vertex="1">
+                    <mxGeometry height="100" width="260" x="540" y="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="m" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_machine (SCD2)&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK machine_sk&lt;/b&gt;" vertex="1">
+                    <mxGeometry height="100" width="260" x="540" y="650" as="geometry"/>
+                </mxCell>
+                <mxCell id="p" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;dim_plant&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK plant_sk&lt;/b&gt;" vertex="1">
+                    <mxGeometry height="100" width="260" x="1100" y="640" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" edge="1" parent="1" source="d" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="wo">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" edge="1" parent="1" source="m" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="wo">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" edge="1" parent="1" source="d" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="agg">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" edge="1" parent="1" source="m" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="agg">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" edge="1" parent="1" source="p" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#6c8ebf;strokeWidth=2;" target="agg">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

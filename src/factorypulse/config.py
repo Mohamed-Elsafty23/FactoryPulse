@@ -2,19 +2,29 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from functools import lru_cache
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Env(StrEnum):
-    """Which environment the code is running against."""
+class Env(str, Enum):
+    """Which environment the code is running against.
+
+    `(str, Enum)` rather than `StrEnum`: StrEnum is 3.11+, but this package
+    declares `requires-python = ">=3.10"` and the Databricks runtime executes
+    it on Python 3.10. The mixin gives the same str behaviour on every
+    supported version.
+    """
 
     LOCAL = "local"
     AZURE_DEV = "azure_dev"
     AZURE_PROD = "azure_prod"
+
+    # StrEnum formats as its value; a plain (str, Enum) would format as
+    # "Env.LOCAL". Pin it so f-strings stay identical across versions.
+    __str__ = str.__str__
 
 
 class Settings(BaseSettings):
@@ -92,7 +102,7 @@ class Settings(BaseSettings):
 
     @property
     def jdbc_url(self) -> str:
-        return f"jdbc:postgresql://{self.postgres_host}:{self.postgres_port}" f"/{self.postgres_db}"
+        return f"jdbc:postgresql://{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     @property
     def jdbc_properties(self) -> dict[str, str]:

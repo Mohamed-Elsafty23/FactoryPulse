@@ -1,3 +1,10 @@
+# Generated data and rendered media are deliberate, committed deliverables:
+# exports/ is the Parquet snapshot the dashboard reads with Azure deleted, and
+# docs/diagrams/ holds the rendered walkthrough. Neither is hand-edited, so the
+# whitespace hooks have nothing useful to do there — and "fixing" a Spark
+# _committed_* marker or a rendered SVG only creates noise.
+exclude: "^(exports/|docs/diagrams/pipeline_a|docs/evidence/)"
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -7,7 +14,9 @@ repos:
       - id: check-yaml
       - id: check-json
       - id: check-added-large-files
-        args: ["--maxkb=1000"]
+        # The rendered WebM (~2.4 MB) and the Gold Parquet snapshot are the
+        # two largest committed artifacts and both are intentional.
+        args: ["--maxkb=3000"]
       - id: check-merge-conflict
       - id: detect-private-key
 

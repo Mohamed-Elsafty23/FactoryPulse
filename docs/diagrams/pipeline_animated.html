@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>FactoryPulse — Pipeline Walkthrough</title>
+<style>
+  :root{
+    --surface:#fcfcfb; --page:#f9f9f7;
+    --ink:#0b0b0b; --ink2:#2f2e2b; --muted:#56544f;
+    --grid:#e1e0d9; --axis:#c3c2b7;
+    --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a;
+    --bronze:#b07a3c; --silver:#8a8d93; --gold:#c9972b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);
+       font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+  .diagram{position:relative;width:1620px;height:840px;margin:20px auto;
+           background:var(--surface);border:1px solid var(--grid);border-radius:14px}
+  .title{position:absolute;left:28px;top:18px;font-size:27px;font-weight:700}
+  .sub{position:absolute;left:28px;top:54px;font-size:16px;color:var(--ink2)}
+
+  .pill{position:absolute;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:4px;background:#fff;border:1px solid var(--grid);
+        border-radius:10px;font-size:14px;font-weight:600;color:var(--ink)}
+  .pill img{width:30px;height:30px;object-fit:contain}
+
+  .zone{position:absolute;border:1px dashed var(--axis);border-radius:12px;
+        background:rgba(0,0,0,0.015)}
+  .zone-label{position:absolute;font-size:13.5px;font-weight:650;letter-spacing:.07em;
+              text-transform:uppercase;color:var(--muted)}
+
+  .tool{position:absolute;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:5px;background:#fff;border:1px solid var(--grid);
+        border-radius:10px;font-size:15px;font-weight:650;text-align:center;
+        padding:6px;transition:all .45s ease}
+  .tool img{width:32px;height:32px;object-fit:contain}
+  .tool .cap{line-height:1.2;color:var(--ink);font-weight:700}
+  .tool .sub2{font-size:12.5px;line-height:1.25;color:var(--ink2);font-weight:500}
+
+  /* lit state — the only thing the animation changes */
+  .tool.lit{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,120,214,.16);
+            transform:translateY(-2px)}
+  .tool.lit.warm{border-color:var(--orange);box-shadow:0 0 0 3px rgba(235,104,52,.16)}
+  .zone.lit{border-color:var(--blue);border-style:solid;background:rgba(42,120,214,.05)}
+
+  .b-bronze{border-left:4px solid var(--bronze)}
+  .b-silver{border-left:4px solid var(--silver)}
+  .b-gold{border-left:4px solid var(--gold)}
+
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .wire{fill:none;stroke:var(--axis);stroke-width:1.6}
+  .glow{fill:none;stroke:var(--blue);stroke-width:3;stroke-linecap:round;
+        opacity:0;stroke-dasharray:14 320;filter:drop-shadow(0 0 5px rgba(42,120,214,.5))}
+  .glow.warm{stroke:var(--orange);filter:drop-shadow(0 0 5px rgba(235,104,52,.5))}
+  .glow.on{opacity:1;animation:flow 1.5s linear infinite}
+  @keyframes flow{from{stroke-dashoffset:334}to{stroke-dashoffset:0}}
+
+  .hud{position:absolute;left:28px;bottom:26px;display:flex;align-items:center;gap:12px}
+  .step-no{font-size:13px;font-weight:650;color:var(--ink2);letter-spacing:.1em}
+  .step-tag{font-size:18px;font-weight:650;color:var(--ink)}
+  .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--blue);
+       border-radius:0 0 0 14px;transition:width .35s linear}
+  .legend{position:absolute;right:28px;bottom:24px;display:flex;gap:18px;font-size:13px;font-weight:600;
+          color:var(--ink2)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+
+  /* Taller boxes to fit the enlarged type without clipping. */
+  #t-ai4i,#t-sql{height:100px !important}
+  #t-sim,#t-faker{height:104px !important}
+  #t-adf{height:142px !important}
+  #t-adls,#t-uc{height:86px !important}
+  #t-bronze,#t-silver,#t-gold{height:96px !important}
+  #t-quar,#t-ops{height:84px !important}
+  #t-duck,#t-st{height:96px !important}
+  #t-plot{height:92px !important}
+  .pill{height:70px !important}
+</style>
+</head>
+<body>
+<div class="diagram" id="D">
+  <div class="title">FactoryPulse — Manufacturing Reliability Lakehouse</div>
+  <div class="sub">~10M sensor readings · Bronze → Silver → Gold · governed by Unity Catalog · provisioned entirely with Terraform</div>
+
+  <!-- cross-cutting tooling -->
+  <div class="pill" style="left:28px;top:92px;width:92px;height:62px">
+    <img src="logos/02_docker.png" onerror="this.remove()"><span>Docker</span></div>
+  <div class="pill" style="left:130px;top:92px;width:92px;height:62px">
+    <img src="logos/01_python.png" onerror="this.remove()"><span>Python</span></div>
+  <div class="pill" id="p-tf" style="left:1380px;top:92px;width:104px;height:62px">
+    <img src="logos/03_terraform.png" onerror="this.remove()"><span>Terraform</span></div>
+  <div class="pill" style="left:1494px;top:92px;width:98px;height:62px">
+    <img src="logos/12_githubactions.png" onerror="this.remove()"><span>CI</span></div>
+
+  <!-- SOURCES -->
+  <div class="zone" id="z-src" style="left:28px;top:300px;width:196px;height:250px"></div>
+  <div class="zone-label" style="left:36px;top:280px">Sources</div>
+  <div class="tool" id="t-ai4i" style="left:44px;top:316px;width:164px;height:86px">
+    <span class="cap">AI4I 2020</span><span class="sub2">10k real rows · UCI</span></div>
+  <div class="tool" id="t-sim" style="left:44px;top:418px;width:164px;height:96px">
+    <img src="logos/spark.png" onerror="this.remove()">
+    <span class="cap">PySpark simulator</span><span class="sub2">~10M rows · seeded</span></div>
+
+  <!-- OPERATIONAL -->
+  <div class="zone" id="z-ops" style="left:262px;top:300px;width:186px;height:250px"></div>
+  <div class="zone-label" style="left:270px;top:280px">Source system</div>
+  <div class="tool" id="t-sql" style="left:278px;top:316px;width:154px;height:96px">
+    <img src="logos/04_azuresql.png" onerror="this.remove()">
+    <span class="cap">Azure SQL</span><span class="sub2">serverless · auto-pause</span></div>
+  <div class="tool" id="t-faker" style="left:278px;top:428px;width:154px;height:86px">
+    <img src="logos/faker.png" onerror="this.remove()">
+    <span class="cap">Faker</span><span class="sub2">machines · work orders</span></div>
+
+  <!-- INGESTION -->
+  <div class="zone" id="z-adf" style="left:486px;top:300px;width:176px;height:170px"></div>
+  <div class="zone-label" style="left:494px;top:280px">Ingestion</div>
+  <div class="tool" id="t-adf" style="left:502px;top:320px;width:144px;height:130px">
+    <img src="logos/adf.png" onerror="this.remove()">
+    <span class="cap">Data Factory</span>
+    <span class="sub2">metadata-driven<br/>watermarks · backfill</span></div>
+
+  <!-- LAKE -->
+  <div class="zone" id="z-lake" style="left:700px;top:252px;width:560px;height:330px"></div>
+  <div class="zone-label" style="left:708px;top:232px">ADLS Gen2 + Delta Lake · Databricks</div>
+  <div class="tool" id="t-adls" style="left:716px;top:272px;width:140px;height:74px">
+    <img src="logos/05_adls.png" onerror="this.remove()">
+    <span class="cap">ADLS Gen2</span><span class="sub2">landing</span></div>
+  <div class="tool b-bronze" id="t-bronze" style="left:716px;top:366px;width:166px;height:84px">
+    <span class="cap">Bronze</span><span class="sub2">raw · immutable<br/>lineage columns</span></div>
+  <div class="tool b-silver" id="t-silver" style="left:898px;top:366px;width:166px;height:84px">
+    <span class="cap">Silver</span><span class="sub2">validated · deduped<br/>quarantine</span></div>
+  <div class="tool b-gold" id="t-gold" style="left:1080px;top:366px;width:166px;height:84px">
+    <span class="cap">Gold</span><span class="sub2">star schema<br/>SCD2 · aggregates</span></div>
+  <div class="tool" id="t-uc" style="left:1080px;top:272px;width:166px;height:74px">
+    <img src="logos/08_unitycatalog.png" onerror="this.remove()">
+    <span class="cap">Unity Catalog</span><span class="sub2">grants · lineage</span></div>
+
+  <!-- QUALITY -->
+  <div class="tool warm" id="t-quar" style="left:898px;top:486px;width:166px;height:74px">
+    <span class="cap">Quarantine</span><span class="sub2">rejects + reason</span></div>
+  <div class="tool warm" id="t-ops" style="left:1080px;top:486px;width:166px;height:74px">
+    <span class="cap">ops.pipeline_runs</span><span class="sub2">every run logged</span></div>
+
+  <!-- CONSUMPTION -->
+  <div class="zone" id="z-dash" style="left:1300px;top:300px;width:290px;height:250px"></div>
+  <div class="zone-label" style="left:1308px;top:280px">Consumption</div>
+  <div class="tool" id="t-duck" style="left:1316px;top:316px;width:124px;height:86px">
+    <img src="logos/09_duckdb.png" onerror="this.remove()">
+    <span class="cap">DuckDB</span><span class="sub2">semantic layer</span></div>
+  <div class="tool" id="t-st" style="left:1452px;top:316px;width:124px;height:86px">
+    <img src="logos/11_streamlit.png" onerror="this.remove()">
+    <span class="cap">Streamlit</span><span class="sub2">2 pages</span></div>
+  <div class="tool" id="t-plot" style="left:1316px;top:420px;width:260px;height:86px">
+    <img src="logos/10_plotly.png" onerror="this.remove()">
+    <span class="cap">Plotly</span><span class="sub2">charts</span></div>
+
+  <svg class="wires">
+    <path class="wire" d="M 224 460 H 262"/>
+    <path class="wire" d="M 224 358 H 243 V 460"/>
+    <path class="wire" d="M 448 380 H 486"/>
+    <path class="wire" d="M 662 385 H 700"/>
+    <path class="wire" d="M 786 346 V 366"/>
+    <path class="wire" d="M 882 408 H 898"/>
+    <path class="wire" d="M 1064 408 H 1080"/>
+    <path class="wire" d="M 981 450 V 486"/>
+    <path class="wire" d="M 1163 450 V 486"/>
+    <path class="wire" d="M 1163 366 V 346"/>
+    <path class="wire" d="M 1246 408 H 1273 V 359 H 1300"/>
+
+    <path class="glow" id="g1" d="M 224 358 H 243 V 460 H 262"/>
+    <path class="glow" id="g2" d="M 448 380 H 486"/>
+    <path class="glow" id="g3" d="M 662 385 H 700"/>
+    <path class="glow" id="g4" d="M 786 346 V 366"/>
+    <path class="glow" id="g5" d="M 882 408 H 898"/>
+    <path class="glow warm" id="g6" d="M 981 450 V 486"/>
+    <path class="glow" id="g7" d="M 1064 408 H 1080"/>
+    <path class="glow" id="g8" d="M 1163 366 V 346"/>
+    <path class="glow warm" id="g9" d="M 1163 450 V 486"/>
+    <path class="glow" id="g10" d="M 1246 408 H 1273 V 359 H 1300"/>
+  </svg>
+
+  <div class="hud">
+    <span class="step-no" id="hud-no">STEP 0 / 10</span>
+    <span class="step-tag" id="hud">Initializing</span>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--bronze)"></i>Bronze</span>
+    <span><i style="background:var(--silver)"></i>Silver</span>
+    <span><i style="background:var(--gold)"></i>Gold</span>
+    <span><i style="background:var(--orange)"></i>Quality / ops</span>
+  </div>
+  <div class="bar" id="pbar" style="width:0%"></div>
+</div>
+
+<script>
+const STEP_MS = 4200;          // must match render_pipeline_gif.py --duration maths
+const START_DELAY_MS = 1000;
+
+// Each step: the wire that flows, the nodes that light, and the caption.
+const STEPS = [
+  {g:null, lit:["t-ai4i","t-sim","z-src"],
+   tag:"AI4I 2020 supplies real sensor distributions and the 5-mode failure taxonomy"},
+  {g:"g1", lit:["t-sim","t-faker","t-sql","z-ops"],
+   tag:"Faker seeds the operational source system — machines, work orders, production orders"},
+  {g:"g2", lit:["t-adf","z-adf"],
+   tag:"Data Factory: ONE metadata-driven pipeline, watermarked, with a re-runnable backfill"},
+  {g:"g3", lit:["t-adls","z-lake"],
+   tag:"Parquet lands in ADLS Gen2, Hive-partitioned by ingest date"},
+  {g:"g4", lit:["t-bronze"],
+   tag:"Bronze: raw and immutable. Lineage columns only — no business logic"},
+  {g:"g5", lit:["t-silver"],
+   tag:"Silver: parsed, deduplicated, validated against 12 contextual rules"},
+  {g:"g6", lit:["t-quar"], warm:true,
+   tag:"Rejected rows are quarantined WITH a reason — never silently dropped"},
+  {g:"g7", lit:["t-gold"],
+   tag:"Gold: star schema. SCD Type 2 dim_machine, point-in-time joins, aggregates"},
+  {g:"g8", lit:["t-uc"],
+   tag:"Unity Catalog governs it all — grants for 3 personas, comments, column lineage"},
+  {g:"g9", lit:["t-ops"], warm:true,
+   tag:"Every run writes to ops.pipeline_runs — on success AND on failure"},
+  {g:"g10", lit:["t-duck","t-st","t-plot","z-dash"],
+   tag:"DuckDB + Streamlit + Plotly: a tested semantic layer that outlives the cloud"},
+];
+
+let i = 0;
+function clearLit(){
+  document.querySelectorAll(".tool.lit,.zone.lit").forEach(e=>e.classList.remove("lit"));
+  document.querySelectorAll(".glow.on").forEach(e=>e.classList.remove("on"));
+}
+function tick(){
+  const s = STEPS[i % STEPS.length];
+  clearLit();
+  if (s.g) document.getElementById(s.g).classList.add("on");
+  s.lit.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.add("lit");
+    if (s.warm) el.classList.add("warm");
+  });
+  // Terraform pulses throughout: it provisions every Azure box on screen.
+  document.getElementById("p-tf").style.borderColor =
+      (i % 2 === 0) ? "var(--blue)" : "var(--grid)";
+  document.getElementById("hud").textContent = s.tag;
+  document.getElementById("hud-no").textContent =
+      `STEP ${(i % STEPS.length) + 1} / ${STEPS.length}`;
+  document.getElementById("pbar").style.width =
+      (((i % STEPS.length) + 1) / STEPS.length * 100) + "%";
+  i++;
+}
+setTimeout(()=>{ tick(); setInterval(tick, STEP_MS); }, START_DELAY_MS);
+</script>
+</body>
+</html>

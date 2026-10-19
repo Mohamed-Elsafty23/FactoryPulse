@@ -49,3 +49,23 @@ docs/build/
 .DS_Store
 Thumbs.db
 *.swp
+
+# ---- Azure local credentials ----------------------------------------------
+.azure-credit-info
+.azure-env
+
+# ---- Terraform -------------------------------------------------------------
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+infra/terraform/tfplan
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# Saved Terraform plans: binary, and they embed resource attribute values
+# (including generated secrets). Never commit them.
+tfplan
+tfplan*
+*.tfplan

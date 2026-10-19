@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
+import os
+import sys
+
 from delta import configure_spark_with_delta_pip
-from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.storagelevel import StorageLevel
 
 from factorypulse.config import Settings, settings
 
@@ -43,10 +48,17 @@ def get_spark(
     extra_packages: list[str] = []
 
     if cfg.is_local:
+        # Conda/base environments can expose a different ``python3`` than the
+        # interpreter running this process. Spark workers must use the exact
+        # same minor version as the driver.
+        os.environ["PYSPARK_PYTHON"] = sys.executable
+        os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
         extra_packages = _S3_PACKAGES + _JDBC_PACKAGES
         builder = (
             # Keep local development responsive on an 8-core/16-GB laptop.
             builder.master("local[2]")
+            .config("spark.pyspark.python", sys.executable)
+            .config("spark.pyspark.driver.python", sys.executable)
             .config("spark.sql.shuffle.partitions", str(shuffle_partitions or 8))
             .config("spark.driver.memory", "2g")
             .config("spark.hadoop.fs.s3a.endpoint", cfg.minio_endpoint)
@@ -70,3 +82,23 @@ def get_spark(
 
     spark.sparkContext.setLogLevel("WARN")
     return spark
+
+
+def maybe_persist(df: DataFrame, level: StorageLevel) -> DataFrame:
+    """Persist ``df`` where the runtime allows it, else return it unchanged.
+
+    Databricks serverless compute rejects PERSIST/CACHE outright
+    (NOT_SUPPORTED_WITH_SERVERLESS). Persisting is only ever a performance
+    optimisation here — it avoids evaluating an expression tree twice — so
+    degrading to recomputation keeps results identical and the job running.
+    """
+    try:
+        return df.persist(level)
+    except Exception:
+        return df
+
+
+def maybe_unpersist(df: DataFrame) -> None:
+    """Release a persisted DataFrame, tolerating runtimes that never cached it."""
+    with contextlib.suppress(Exception):
+        df.unpersist()

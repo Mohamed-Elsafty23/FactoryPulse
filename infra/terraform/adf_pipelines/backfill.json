@@ -1,0 +1,69 @@
+[
+  {
+    "name": "BackfillCopy",
+    "type": "Copy",
+    "dependsOn": [],
+    "policy": {
+      "timeout": "0.02:00:00",
+      "retry": 3,
+      "retryIntervalInSeconds": 60
+    },
+    "typeProperties": {
+      "source": {
+        "type": "AzureSqlSource",
+        "sqlReaderQuery": {
+          "value": "@concat('SELECT * FROM ', pipeline().parameters.sourceSchema, '.', pipeline().parameters.sourceTable, ' WHERE ', pipeline().parameters.watermarkColumn, ' >= ''', pipeline().parameters.startDate, '''', ' AND ', pipeline().parameters.watermarkColumn, ' < ''', pipeline().parameters.endDate, '''')",
+          "type": "Expression"
+        },
+        "queryTimeout": "02:00:00",
+        "partitionOption": "None"
+      },
+      "sink": {
+        "type": "ParquetSink",
+        "storeSettings": {
+          "type": "AzureBlobFSWriteSettings"
+        },
+        "formatSettings": {
+          "type": "ParquetWriteSettings"
+        }
+      },
+      "enableStaging": false,
+      "translator": {
+        "type": "TabularTranslator",
+        "typeConversion": true
+      }
+    },
+    "inputs": [
+      {
+        "referenceName": "ds_sql_generic",
+        "type": "DatasetReference",
+        "parameters": {
+          "schemaName": {
+            "value": "@pipeline().parameters.sourceSchema",
+            "type": "Expression"
+          },
+          "tableName": {
+            "value": "@pipeline().parameters.sourceTable",
+            "type": "Expression"
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "referenceName": "ds_adls_parquet",
+        "type": "DatasetReference",
+        "parameters": {
+          "folderPath": {
+            "value": "@concat(pipeline().parameters.targetPath, '/backfill/', pipeline().parameters.startDate, '_to_', pipeline().parameters.endDate)",
+            "type": "Expression"
+          },
+          "fileName": {
+            "value": "@concat(pipeline().parameters.sourceTable, '_backfill_', formatDateTime(utcnow(), 'yyyyMMddHHmmss'), '.parquet')",
+            "type": "Expression"
+          }
+        }
+      }
+    ]
+  }
+]

@@ -25,3 +25,22 @@ managed, but it preserves the portfolio artifact independently of Azure.
 - Microsoft Fabric trial: introduces a 60-day clock and potential `.pbix` export limitations.
 - Windows VM on Azure: provides remote capacity but consumes Azure credit and requires strict
   deallocation discipline.
+
+## ADR-002: Deterministic SCD2 surrogate keys
+
+**Date:** 2026-10-18
+**Status:** Accepted
+
+**Context:** Each version of a machine needs a distinct surrogate key, and rebuilding the same
+version must reproduce that key so already-built fact tables continue to join correctly.
+
+**Decision:** Derive `machine_sk` from a 64-bit xxHash of `machine_id` and `valid_from`. The
+natural key identifies the machine and the effective timestamp identifies its version.
+
+**Consequences:** Builds are deterministic, need no shared sequence, and are safe to rerun.
+Keys are opaque and have a theoretical hash-collision risk, which is negligible at this scale.
+
+**Alternatives rejected:**
+
+- `monotonically_increasing_id()`: values are not stable across rebuilds.
+- `MAX(machine_sk) + row_number()`: requires target coordination and complicates concurrent runs.
