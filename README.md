@@ -119,6 +119,19 @@ deficiency with a checker rather than chosen by eye; results are in [docs/metric
 Grain is set as a table comment on every fact, so it appears in Catalog Explorer, `DESCRIBE`
 and catalog search.
 
+Two conformed stars share `dim_machine`, `dim_date`, `dim_plant` and `dim_shift`:
+
+<p align="center">
+  <img src="docs/factorypulse_machine_event_star.png" alt="Machine event star schema" width="100%"/>
+</p>
+
+<p align="center">
+  <img src="docs/factorypulse_downtime_star.png" alt="Downtime star schema" width="100%"/>
+</p>
+
+Facts join `dim_machine` on `machine_sk`, the version-specific surrogate key, never on
+`machine_id` — a point-in-time join on the business key would fan out across SCD2 versions.
+
 ---
 
 ## Stack
