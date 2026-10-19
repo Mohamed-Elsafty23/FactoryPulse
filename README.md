@@ -35,7 +35,7 @@
 | **Scale** | 10,049,501 rows ingested, 9,896,841 through to Gold |
 | **Runtime** | 6 m 37 s end to end on Databricks serverless |
 | **Infrastructure** | 69 Terraform resources, `plan` clean |
-| **Quality** | 10 data-quality gates, 59 tests, CI green |
+| **Quality** | 10 data-quality gates, 68 tests, CI green |
 
 Built across 16 phases: local Docker development, Azure provisioning, metadata-driven
 ingestion, medallion transformation, governance, and a dashboard that runs without Azure.
@@ -166,7 +166,7 @@ Measured on a green end-to-end run, 2026-10-19.
 | `fact_downtime` intervals | 100,228 |
 | End-to-end runtime | **6 m 37 s** |
 | Data-quality checks | **10 / 10** |
-| Tests | **59 passing** |
+| Tests | **68 passing** |
 | Partition pruning speed-up | **1.40×** (0.734 s → 0.524 s) |
 
 Method, hardware and the physical plan behind the pruning figure are in
