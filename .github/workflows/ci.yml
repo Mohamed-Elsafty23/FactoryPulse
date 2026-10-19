@@ -19,7 +19,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install ruff
+      # Pinned: an unpinned formatter drifts from the local and
+      # pre-commit versions and fails on formatting they produced.
+      - run: pip install ruff==0.17.1
       - name: Lint
         run: ruff check src tests
       - name: Format check

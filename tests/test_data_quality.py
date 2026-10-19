@@ -104,6 +104,6 @@ def test_10_rerun_is_idempotent(spark, mini_lake, gold):
     before = gold("fact_machine_event").count()
     build_fact_machine_event(spark, RunContext(pipeline="rerun"), mini_lake)
     after = spark.read.format("delta").load(mini_lake.gold_path("fact_machine_event")).count()
-    assert (
-        before == after
-    ), f"re-running Gold changed row count ({before:,} -> {after:,}); check overwrite semantics"
+    assert before == after, (
+        f"re-running Gold changed row count ({before:,} -> {after:,}); check overwrite semantics"
+    )
