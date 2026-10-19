@@ -22,7 +22,7 @@ from factorypulse.dashboard.metrics import (
 from factorypulse.dashboard.theme import delta_color, page_css, palette
 
 st.set_page_config(
-    page_title="FactoryPulse — Anlagenverfügbarkeit",
+    page_title="FactoryPulse — Equipment Availability",
     page_icon="⚙",
     layout="wide",
 )
@@ -58,24 +58,25 @@ con = get_con()
 opts = filter_options(con)
 
 # ---------------------------------------------------------------- filters
-st.title("FactoryPulse — Anlagenverfügbarkeit")
+st.title("FactoryPulse — Equipment Availability")
 
 fc = st.columns([2, 1, 1, 1])
 with fc[0]:
     dates = st.date_input(
-        "Zeitraum",
+        "Date range",
         value=(pd.Timestamp(opts["date_min"]), pd.Timestamp(opts["date_max"])),
         min_value=pd.Timestamp(opts["date_min"]),
         max_value=pd.Timestamp(opts["date_max"]),
     )
 with fc[1]:
-    plants = st.multiselect("Werk", opts["plants"], default=[])
+    plants = st.multiselect("Plant", opts["plants"], default=[])
 with fc[2]:
-    shifts = st.multiselect("Schicht", opts["shifts"], default=[])
+    # Stored lowercase in dim_shift; title-cased for display only.
+    shifts = st.multiselect("Shift", opts["shifts"], default=[], format_func=str.title)
 with fc[3]:
     dark = st.toggle("Dark mode", value=False)
     # Relief for the light-mode contrast WARN — see dashboard/theme.py.
-    show_tables = st.toggle("Tabellenansicht", value=False)
+    show_tables = st.toggle("Table view", value=False)
 
 if isinstance(dates, tuple) and len(dates) == 2:
     date_from, date_to = str(dates[0]), str(dates[1])
@@ -110,7 +111,7 @@ def tile(col, label, value, delta_val, higher_is_better, fmt="{:,.1f}", suffix="
         )
         if delta_val is None:
             st.markdown(
-                f"<span style='color:{p['muted']};font-size:0.8rem'>kein Vergleich</span>",
+                f"<span style='color:{p['muted']};font-size:0.8rem'>no prior period</span>",
                 unsafe_allow_html=True,
             )
         else:
@@ -118,16 +119,16 @@ def tile(col, label, value, delta_val, higher_is_better, fmt="{:,.1f}", suffix="
             colr = delta_color(delta_val, higher_is_better, dark)
             st.markdown(
                 f"<span style='color:{colr};font-size:0.8rem'>"
-                f"{arrow} {abs(delta_val) * 100:.1f}% ggü. Vorperiode</span>",
+                f"{arrow} {abs(delta_val) * 100:.1f}% vs. previous period</span>",
                 unsafe_allow_html=True,
             )
 
 
 cols = st.columns(5)
-tile(cols[0], "Stillstandzeit", k["downtime_hours"], d["downtime_hours"], False, suffix=" h")
+tile(cols[0], "Downtime", k["downtime_hours"], d["downtime_hours"], False, suffix=" h")
 tile(
     cols[1],
-    "Stillstandkosten",
+    "Downtime cost",
     k["downtime_cost_eur"],
     d["downtime_cost_eur"],
     False,
@@ -137,7 +138,7 @@ tile(cols[2], "MTBF", k["mtbf_hours"], d["mtbf_hours"], True, suffix=" h")
 tile(cols[3], "MTTR", k["mttr_hours"], d["mttr_hours"], False, suffix=" h")
 tile(
     cols[4],
-    "Verfügbarkeit",
+    "Availability",
     None if k["availability"] is None else k["availability"] * 100,
     None,
     True,
@@ -150,7 +151,7 @@ st.divider()
 c1, c2 = st.columns(2)
 with c1:
     if data["trend"].empty:
-        st.info("Keine Daten im gewählten Zeitraum.")
+        st.info("No data in the selected range.")
     else:
         st.plotly_chart(downtime_trend_chart(data["trend"], dark), width="stretch")
         if show_tables:
@@ -158,7 +159,7 @@ with c1:
 
 with c2:
     if data["pareto"].empty:
-        st.info("Keine Ausfälle im gewählten Zeitraum.")
+        st.info("No failures in the selected range.")
     else:
         st.plotly_chart(pareto_chart(data["pareto"], dark), width="stretch")
         if show_tables:
@@ -179,10 +180,10 @@ with c2:
 st.divider()
 
 # ---------------------------------------------- worst machines, by COST
-st.subheader("Kritischste Maschinen — nach Stillstandkosten")
+st.subheader("Most critical machines — by downtime cost")
 st.caption(
-    "Nach Kosten sortiert, nicht nach Stunden: eine Engpassmaschine auf der "
-    "Hauptlinie wiegt schwerer als dieselbe Stillstandzeit auf einer Reserve."
+    "Ranked by cost rather than hours: a bottleneck machine on the main line "
+    "matters more than the same downtime on a spare."
 )
 
 w = data["worst"]
@@ -204,24 +205,24 @@ st.dataframe(
     hide_index=True,
     column_config={
         "machine_id": "ID",
-        "machine_name": "Maschine",
-        "plant_name": "Werk",
-        "line_id": "Linie",
-        "criticality": "Kritikalität",
-        "downtime_hours": st.column_config.NumberColumn("Stillstand (h)", format="%.1f"),
+        "machine_name": "Machine",
+        "plant_name": "Plant",
+        "line_id": "Line",
+        "criticality": "Criticality",
+        "downtime_hours": st.column_config.NumberColumn("Downtime (h)", format="%.1f"),
         # Data bars make rank readable without a chart
         "downtime_cost_eur": st.column_config.ProgressColumn(
-            "Kosten (€)",
+            "Cost (€)",
             format="€%.0f",
             min_value=0,
             max_value=float(w["downtime_cost_eur"].max() or 1),
         ),
         "mtbf_hours": st.column_config.NumberColumn("MTBF (h)", format="%.1f"),
-        "downtime_events": st.column_config.NumberColumn("Ereignisse", format="%d"),
+        "downtime_events": st.column_config.NumberColumn("Events", format="%d"),
     },
 )
 
 st.caption(
-    "Hinweis: dim_machine ist SCD Typ 2. Diese Ansicht filtert auf is_current = true, "
-    "damit geänderte Maschinen nicht doppelt erscheinen."
+    "Note: dim_machine is SCD Type 2. This view filters on is_current = true so a "
+    "machine whose attributes changed does not appear twice."
 )

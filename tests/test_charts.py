@@ -52,7 +52,7 @@ def test_trend_chart_labels_only_the_y_axis():
     )
     fig = downtime_trend_chart(df)
 
-    assert fig.layout.yaxis.title.text == "Stunden"
+    assert fig.layout.yaxis.title.text == "Hours"
     assert fig.layout.xaxis.title.text is None
 
 

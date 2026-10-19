@@ -27,7 +27,7 @@ def downtime_trend_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
             x=df["month"],
             y=df["downtime_hours"],
             mode="lines+markers",
-            name="Stillstandzeit",
+            name="Downtime",
             line=dict(color=p["categorical"][0], width=LINE_WIDTH),
             marker=dict(size=MARKER_SIZE, color=p["categorical"][0]),
             hovertemplate="<b>%{x}</b><br>%{y:.1f} h<extra></extra>",
@@ -47,13 +47,13 @@ def downtime_trend_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
 
     layout = plotly_layout(dark, height=300)
     layout["title"] = dict(
-        text="Stillstandzeit pro Monat",
+        text="Downtime by month",
         font=dict(size=14, color=p["text_primary"]),
         x=0,
     )
     layout["showlegend"] = False  # single series
     layout["hovermode"] = "x unified"  # crosshair on a line chart
-    layout["yaxis"]["title"] = "Stunden"
+    layout["yaxis"]["title"] = "Hours"
     fig.update_layout(**layout)
     return fig
 
@@ -74,15 +74,15 @@ def pareto_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
         go.Bar(
             x=df["failure_mode"],
             y=df["pct_of_total"],
-            name="Anteil an Stillstandzeit",
+            name="Share of downtime",
             marker=dict(
                 color=[colors[m] for m in df["failure_mode"]],
                 line=dict(color=p["surface"], width=SEGMENT_GAP),
             ),
             customdata=df[["downtime_hours", "events"]],
             hovertemplate=(
-                "<b>%{x}</b><br>%{y:.1f}%% des Gesamtstillstands"
-                "<br>%{customdata[0]:.1f} h · %{customdata[1]} Ereignisse<extra></extra>"
+                "<b>%{x}</b><br>%{y:.1f}%% of total downtime"
+                "<br>%{customdata[0]:.1f} h · %{customdata[1]} events<extra></extra>"
             ),
         )
     )
@@ -90,22 +90,22 @@ def pareto_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
         go.Scatter(
             x=df["failure_mode"],
             y=df["cumulative_pct"],
-            name="Kumuliert",
+            name="Cumulative",
             mode="lines+markers",
             line=dict(color=p["text_secondary"], width=LINE_WIDTH),
             marker=dict(size=MARKER_SIZE, color=p["text_secondary"]),
-            hovertemplate="kumuliert %{y:.1f}%%<extra></extra>",
+            hovertemplate="cumulative %{y:.1f}%%<extra></extra>",
         )
     )
 
     layout = plotly_layout(dark, height=360)
     layout["margin"]["t"] = 76  # headroom: title + legend above the plot
     layout["title"] = dict(
-        text="Ausfallarten nach Stillstandanteil (Pareto)",
+        text="Failure modes by share of downtime (Pareto)",
         font=dict(size=14, color=p["text_primary"]),
         x=0,
     )
-    layout["yaxis"].update(title="% des Gesamtstillstands", range=[0, 105], ticksuffix="%")
+    layout["yaxis"].update(title="% of total downtime", range=[0, 105], ticksuffix="%")
     layout["bargap"] = 0.35
     fig.update_layout(**layout)
     return fig
@@ -129,20 +129,20 @@ def failure_rate_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
                     color=hues[i % len(hues)],
                     line=dict(color=p["surface"], width=SEGMENT_GAP),
                 ),
-                hovertemplate=f"<b>{plant}</b><br>%{{x}}<br>%{{y}} Ereignisse<extra></extra>",
+                hovertemplate=f"<b>{plant}</b><br>%{{x}}<br>%{{y}} events<extra></extra>",
             )
         )
 
     layout = plotly_layout(dark, height=320)
     layout["margin"]["t"] = 76  # headroom: title + legend above the plot
     layout["title"] = dict(
-        text="Ausfallereignisse nach Schicht",
+        text="Failure events by shift",
         font=dict(size=14, color=p["text_primary"]),
         x=0,
     )
     layout["barmode"] = "group"
     layout["bargap"] = 0.3
-    layout["yaxis"]["title"] = "Ereignisse"
+    layout["yaxis"]["title"] = "Events"
     fig.update_layout(**layout)
     return fig
 
@@ -160,12 +160,10 @@ def machine_downtime_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
         )
     )
     layout = plotly_layout(dark, height=260)
-    layout["title"] = dict(
-        text="Stillstandzeit pro Tag", font=dict(size=14, color=p["text_primary"]), x=0
-    )
+    layout["title"] = dict(text="Downtime by day", font=dict(size=14, color=p["text_primary"]), x=0)
     layout["showlegend"] = False
     layout["hovermode"] = "x unified"
-    layout["yaxis"]["title"] = "Stunden"
+    layout["yaxis"]["title"] = "Hours"
     fig.update_layout(**layout)
     return fig
 
@@ -190,12 +188,12 @@ def mode_breakdown_chart(df: pd.DataFrame, dark: bool = False) -> go.Figure:
     )
     layout = plotly_layout(dark, height=260)
     layout["title"] = dict(
-        text="Stillstandzeit nach Ausfallart",
+        text="Downtime by failure mode",
         font=dict(size=14, color=p["text_primary"]),
         x=0,
     )
     layout["showlegend"] = False
-    layout["xaxis"]["title"] = "Stunden"
+    layout["xaxis"]["title"] = "Hours"
     layout["bargap"] = 0.35
     fig.update_layout(**layout)
     return fig

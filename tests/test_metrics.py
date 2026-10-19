@@ -118,3 +118,46 @@ def test_prior_window_is_same_length(con):
 def test_availability_between_zero_and_one(con, f):
     a = kpi_summary(con, f)["availability"]
     assert a is None or 0 <= a <= 1
+
+
+# ---- Smoke coverage -----------------------------------------------------
+def test_every_metric_function_executes(con, f):
+    """Each public metric must run against the real exports.
+
+    A page died in the browser because `failure_rate_by_shift` used a SQL
+    function DuckDB doesn't have. Nothing else called it, so nothing caught
+    it. This keeps every query on a path the test suite actually executes.
+    """
+    from factorypulse.dashboard import metrics as m
+
+    assert m.kpi_summary(con, f)["downtime_hours"] > 0
+    assert m.kpi_with_prior(con, f)["current"] is not None
+    assert not m.downtime_trend(con, f).empty
+    assert not m.failure_pareto(con, f).empty
+    assert not m.worst_machines(con, f, limit=5).empty
+    assert not m.failure_rate_by_shift(con, f).empty
+
+    options = m.filter_options(con)
+    assert options["plants"] and options["shifts"]
+
+    machine = m.worst_machines(con, f, limit=1)["machine_id"].iloc[0]
+    detail = m.machine_detail(con, f, machine)
+    assert set(detail) == {"attributes", "daily", "modes", "work_orders"}
+    assert not detail["attributes"].empty
+
+
+def test_shift_labels_are_display_ready(con, f):
+    """The chart groups on these, so they must be presentable, not raw keys."""
+    from factorypulse.dashboard.metrics import failure_rate_by_shift
+
+    shifts = set(failure_rate_by_shift(con, f)["shift"])
+    assert shifts == {"Early", "Late", "Night"}
+
+
+def test_failure_modes_are_in_english(con, f):
+    """dim_failure_type carries name_en and name_de; the UI uses name_en."""
+    from factorypulse.dashboard.metrics import failure_pareto
+
+    modes = set(failure_pareto(con, f)["failure_mode"])
+    assert "Heat dissipation failure" in modes
+    assert not any("ausfall" in m.lower() for m in modes)

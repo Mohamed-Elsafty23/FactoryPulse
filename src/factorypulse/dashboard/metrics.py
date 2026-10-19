@@ -193,7 +193,7 @@ def failure_pareto(con: duckdb.DuckDBPyConnection, f: Filters) -> pd.DataFrame:
     df = con.execute(
         f"""
         SELECT
-            ft.name_de                      AS failure_mode,
+            ft.name_en                      AS failure_mode,
             ft.code                         AS code,
             SUM(d.downtime_minutes) / 60.0  AS downtime_hours,
             SUM(d.downtime_cost_eur)        AS downtime_cost_eur,
@@ -277,9 +277,9 @@ def worst_machines(con: duckdb.DuckDBPyConnection, f: Filters, limit: int = 15) 
 
 def failure_rate_by_shift(con: duckdb.DuckDBPyConnection, f: Filters) -> pd.DataFrame:
     lo, hi = f.date_sk_range()
-    return con.execute(
+    df = con.execute(
         f"""
-        SELECT s.shift_name_de AS shift, p.plant_name AS plant,
+        SELECT s.shift_name AS shift, p.plant_name AS plant,
                COUNT(*)        AS events
         FROM fact_downtime d
         JOIN dim_shift   s ON d.shift_sk   = s.shift_sk
@@ -291,6 +291,11 @@ def failure_rate_by_shift(con: duckdb.DuckDBPyConnection, f: Filters) -> pd.Data
         ORDER BY 1, 2
         """
     ).df()
+    # dim_shift stores shift_name lowercase ("early"/"late"/"night"); the
+    # filter matches on that raw value, so title-case for display only.
+    if not df.empty:
+        df["shift"] = df["shift"].str.title()
+    return df
 
 
 def machine_detail(
@@ -316,7 +321,7 @@ def machine_detail(
     ).df()
 
     modes = con.execute(
-        f"""SELECT ft.name_de AS failure_mode, COUNT(*) AS events,
+        f"""SELECT ft.name_en AS failure_mode, COUNT(*) AS events,
                    SUM(d.downtime_minutes)/60.0 AS downtime_hours
             FROM fact_downtime d
             JOIN dim_failure_type ft ON d.failure_type_sk = ft.failure_type_sk
