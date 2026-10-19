@@ -41,8 +41,7 @@ test:  ## Run all tests (slow — starts Spark)
 test-fast:  ## Run only tests that do not need Spark
 	.venv/bin/pytest -m "not slow"
 
-diagrams:  ## Re-render the architecture diagram + animated walkthrough from HTML
-	cd docs/diagrams && ../../.venv/bin/python render_static.py
+diagrams:  ## Re-render the animated walkthrough from its HTML source
 	cd docs/diagrams && ../../.venv/bin/python render_pipeline_gif.py \
 	  -o pipeline_animated.webm --duration 47 --fps 10
 	cd docs/diagrams && ../../.venv/bin/python render_pipeline_gif.py \
