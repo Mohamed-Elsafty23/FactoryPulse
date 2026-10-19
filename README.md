@@ -283,7 +283,6 @@ pd.read_parquet("exports/gold_fact_downtime/")
 
 | | |
 |---|---|
-| [Build guide](docs/build/00_START_HERE.md) | every phase, with reasoning |
 | [Semantic layer](docs/metrics.md) | each metric and why it's written that way |
 | [KPI dictionary](docs/kpi_dictionary.md) | formula, owner, refresh frequency |
 | [Data model](docs/data_model.md) | bus matrix, fact grains, SCD2 design |
